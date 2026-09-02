@@ -81,17 +81,13 @@ RIME_DLL void SetupLogging(const char* app_name,
     }
   }
   google::SetLogFilenameExtension(".log");
-  google::SetLogSymlink(google::GLOG_INFO, app_name);
-  google::SetLogSymlink(google::GLOG_WARNING, app_name);
-  google::SetLogSymlink(google::GLOG_ERROR, app_name);
+  // google::SetLogSymlink (removed in glog 0.6.0)(google::GLOG_INFO, app_name);
+  // google::SetLogSymlink (removed in glog 0.6.0)(google::GLOG_WARNING, app_name);
+  // google::SetLogSymlink (removed in glog 0.6.0)(google::GLOG_ERROR, app_name);
   // Do not allow other users to read/write log files created by current
   // process.
   FLAGS_logfile_mode = 0600;
-  if (google::IsGoogleLoggingInitialized()) {
-    LOG(WARNING) << "Glog is already initialized.";
-  } else {
-    google::InitGoogleLogging(app_name);
-  }
+  google::InitGoogleLogging(app_name);
 #endif  // RIME_ENABLE_LOGGING
 }
 
