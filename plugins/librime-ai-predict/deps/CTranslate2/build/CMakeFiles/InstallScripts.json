@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/rich/dev/open-source/librime/plugins/librime-ai-predict/deps/CTranslate2/build/cmake_install.cmake",
+		"/Users/rich/dev/open-source/librime/plugins/librime-ai-predict/deps/CTranslate2/build/third_party/spdlog/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

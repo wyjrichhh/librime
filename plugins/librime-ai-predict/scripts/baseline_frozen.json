@@ -1,0 +1,43 @@
+{
+  "label": "before-punct-context",
+  "generated_at": "2026-06-23T11:35:46",
+  "files": [
+    "rime.squirrel.ai_predict.Mac.lan.rich.log.INFO.20260617-092657.37924.log",
+    "rime.squirrel.ai_predict.Mac.lan.rich.log.INFO.20260617-092707.38448.log",
+    "rime.squirrel.ai_predict.Mac.lan.rich.log.INFO.20260617-092717.38671.log",
+    "rime.squirrel.ai_predict.Mac.lan.rich.log.INFO.20260617-130535.32059.log"
+  ],
+  "sessions": 263,
+  "queries": 27538,
+  "queries_no_context": 4279,
+  "cache_hits": 1213,
+  "cache_misses": 22045,
+  "inferences": 6236,
+  "inference_failed": 0,
+  "latency_ms": {
+    "p50": 89,
+    "p90": 116,
+    "p99": 165,
+    "max": 5615
+  },
+  "offers": {
+    "inserted": 389,
+    "promoted": 313,
+    "dedup": 467
+  },
+  "offers_total": 1169,
+  "offers_value_add": 702,
+  "commits_total": 3619,
+  "commits_with_ai_offer": 783,
+  "selected": {
+    "dedup": 243,
+    "promoted": 42,
+    "inserted": 9
+  },
+  "selected_total": 294,
+  "selected_value_add": 51,
+  "selection_rate_overall": 0.3755,
+  "selection_rate_value_add": 0.1189,
+  "cache_hit_rate": 0.0522,
+  "frozen_at": "20260623 11:35:46.360595"
+}
