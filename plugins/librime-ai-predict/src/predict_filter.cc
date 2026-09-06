@@ -201,6 +201,12 @@ PredictFilter::PredictFilter(const Ticket& ticket)
   if (!engine_ || !engine_->schema() || !engine_->schema()->config()) {
     return;
   }
+  // 在 Compose 完成（菜单已填充）后发刷新信号：宿主此刻采样快照才完整。
+  // filter 与 engine 同生命周期重建，连接随 context 销毁自动失效
+  engine_->context()->update_notifier().connect([this](Context* ctx) {
+    if (enabled_ && !ctx->get_property(kAITextProperty).empty())
+      ctx->set_property("ai_predict/refresh", "1");
+  });
   Config* cfg = engine_->schema()->config();
   int n = 0;
   if (cfg->GetInt("ai_predict/target_index", &n) && n >= 0) {
@@ -236,9 +242,6 @@ an<Translation> PredictFilter::Apply(an<Translation> translation,
   // e.g. dedup against slot #1). Synchronous on Compose() so the frontend
   // has the index before it observes the new menu.
   PublishCommentHighlight(engine_, wrapped->ai_inserted_index());
-  // 此刻 AI 候选已并入本轮菜单，宿主此刻采样快照才是完整的；
-  // 与早时机的 kAITextProperty（翻译期发布、菜单未重建）相区分
-  engine_->context()->set_property("ai_predict/refresh", "1");
   return wrapped;
 }
 
