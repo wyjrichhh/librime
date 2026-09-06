@@ -8,6 +8,7 @@ lib/*
 bin/*
 share/*
 deps/*/*
+deps/*.tar.gz
 plugins/*/
 env.bat
 node_modules/
