@@ -167,10 +167,11 @@ class AIPredictFilteredTranslation : public Translation {
                 << ", type=" << matched->type() << ") to slot #"
                 << target_index_ << " with AI marker";
     } else {
-      ai_cand = New<SimpleCandidate>(kAICandidateType,
-                                     buf.front()->start(),
-                                     buf.front()->end(),
-                                     ai_text_, kAICommentMarker);
+      // ShadowCandidate（shadow 到上游首候选）：librime 对 shadow 候选的
+      // 确认/commit 走标准路径；SimpleCandidate 自定义类型选中时 commit 为空
+      ai_cand = New<ShadowCandidate>(buf.front(), kAICandidateType,
+                                     ai_text_, kAICommentMarker,
+                                     /*inherit_comment=*/false);
       LOG(INFO) << "ai_predict_filter: inserted new AI candidate '"
                 << ai_text_ << "' at slot #" << target_index_;
     }
