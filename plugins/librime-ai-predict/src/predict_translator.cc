@@ -171,16 +171,16 @@ bool PredictTranslator::EnsureEngine() {
                << path;
     return false;
   }
-  auto backend = std::make_unique<CT2Backend>();
   InferenceBackendConfig cfg;
   cfg.model_path = path.string();
   cfg.device = device_;
-  if (!backend->Initialize(cfg)) {
+  auto backend = CT2Backend::Shared(cfg);
+  if (!backend) {
     LOG(ERROR) << "ai_predict_translator: failed to initialize CT2 backend";
     return false;
   }
   prediction_ =
-      std::make_unique<PredictionEngine>(engine_, std::move(backend), engine_opt_);
+      std::make_unique<PredictionEngine>(engine_, backend, engine_opt_);
   init_ok_ = true;
   LOG(INFO) << "ai_predict_translator: ready, model=" << path;
   return true;

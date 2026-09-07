@@ -34,7 +34,13 @@ constexpr int kCt2DefaultIntraThreads = 4;
 class CT2Backend : public InferenceBackend {
  public:
   CT2Backend() = default;
-  ~CT2Backend() override;
+  ~CT2Backend() override = default;
+
+  /// 进程级共享实例：模型与 CT2 线程池整个进程只建一次，会话创建/销毁只
+  /// 增减引用。刻意泄漏、不随进程退出析构——销毁 ctranslate2::Translator
+  /// 需热拆除线程池，而池线程退出时的 TLS 析构会反向 join 池子（环形互等），
+  /// 曾在切换输入法销毁会话时死锁整个前端
+  static std::shared_ptr<CT2Backend> Shared(const InferenceBackendConfig& config);
 
   bool Initialize(const InferenceBackendConfig& config) override;
   void Shutdown() override;
