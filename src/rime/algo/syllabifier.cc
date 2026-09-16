@@ -7,6 +7,7 @@
 //
 #include <algorithm>
 #include <queue>
+#include <string_view>
 #include <boost/range/adaptor/reversed.hpp>
 #include <rime/algo/syllabifier.h>
 #include <rime/dict/corrector.h>
@@ -53,19 +54,45 @@ int Syllabifier::BuildSyllableGraph(const string& input,
 
     if (current_pos > farthest)
       farthest = current_pos;
-    DLOG(INFO) << "current_pos: " << current_pos;
+
+    // consume leading delimiters
+    size_t begin_pos = current_pos;
+    while (begin_pos < input.length() &&
+           delimiters_.find(input[begin_pos]) != string::npos)
+      ++begin_pos;
+    DLOG(INFO) << "current_pos: " << current_pos
+               << ", begin_pos: " << begin_pos;
 
     // see where we can go by advancing a syllable
     vector<Prism::Match> matches;
     set<SyllableId> exact_match_syllables;
-    auto current_input = input.substr(current_pos);
-    prism.CommonPrefixSearch(current_input, &matches);
+    std::string_view current_input(input.data() + begin_pos,
+                                   input.length() - begin_pos);
+    if (canonicalizer_) {
+      const size_t limit =
+          (std::min)(current_input.length(), prism.max_key_length());
+      string syllable;
+      syllable.reserve(limit);
+      for (size_t len = 1; len <= limit; ++len) {
+        // TODO: 須重構 Calculus 爲寫入時複製以避免複製子串.
+        syllable.assign(current_input.data(), len);
+        canonicalizer_->Apply(&syllable);
+        // 重排打破了前綴單調性, 故不能用前綴下行搜索, 改爲每次步進精確查詢.
+        int value = -1;
+        if (prism.GetValue(syllable, &value)) {
+          matches.emplace_back(Prism::Match{value, len});
+        }
+      }
+    } else {
+      prism.CommonPrefixSearch(current_input, &matches);
+    }
     if (corrector_) {
       for (auto& m : matches) {
         exact_match_syllables.insert(m.value);
       }
       Corrections corrections;
-      corrector_->ToleranceSearch(prism, current_input, &corrections, 5);
+      corrector_->ToleranceSearch(prism, string{current_input}, &corrections,
+                                  5);
       for (const auto& m : corrections) {
         for (auto accessor = prism.QuerySpelling(m.first);
              !accessor.exhausted(); accessor.Next()) {
@@ -78,12 +105,13 @@ int Syllabifier::BuildSyllableGraph(const string& input,
       }
     }
 
+    size_t leading_gap = begin_pos - current_pos;
     if (!matches.empty()) {
       auto& end_vertices(graph->edges[current_pos]);
       for (const auto& m : matches) {
         if (m.length == 0)
           continue;
-        size_t end_pos = current_pos + m.length;
+        size_t end_pos = current_pos + leading_gap + m.length;
         // consume trailing delimiters
         while (end_pos < input.length() &&
                delimiters_.find(input[end_pos]) != string::npos)
