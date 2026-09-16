@@ -43,8 +43,9 @@ ctranslate2:
 	-DWITH_CUDA:BOOL=OFF \
 	-DWITH_MKL:BOOL=OFF \
 	-DWITH_OPENBLAS:BOOL=OFF \
-	-DWITH_RUY:BOOL=OFF \
+	-DWITH_RUY:BOOL=ON \
 	-DWITH_ACCELERATE:BOOL=$(if $(filter Darwin,$(OS_NAME)),ON,OFF) \
+	-DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5 \
 	-DOPENMP_RUNTIME:STRING="NONE" \
 	-DCMAKE_BUILD_TYPE:STRING="Release" \
 	-DCMAKE_INSTALL_PREFIX:PATH="$(prefix)" \
@@ -55,4 +56,15 @@ ctranslate2:
 	@if [ -f "$(deps_dir)/CTranslate2/$(build)/third_party/cpu_features/libcpu_features.a" ]; then \
 		cp "$(deps_dir)/CTranslate2/$(build)/third_party/cpu_features/libcpu_features.a" "$(prefix)/lib/"; \
 		echo "Installed cpu_features.a to $(prefix)/lib/"; \
+	fi
+	@# WITH_RUY 时 ruy 被编成数十个子归档，而静态库不吸收依赖；合并成一个 libruy.a
+	@# 放进 prefix/lib，插件的 find_library(RUY_LIBRARY) 才找得到。
+	ruy_dir="$(deps_dir)/CTranslate2/$(build)/third_party/ruy"; \
+	if [ -d "$$ruy_dir/ruy" ]; then \
+		libtool -static -o "$(prefix)/lib/libruy.a" \
+			"$$ruy_dir/ruy"/libruy*.a \
+			"$$ruy_dir/ruy/profiler/libruy_profiler_instrumentation.a" \
+			"$$ruy_dir/third_party/cpuinfo/libcpuinfo.a" \
+			"$$ruy_dir/third_party/cpuinfo/deps/clog/libclog.a" 2>/dev/null; \
+		echo "Installed libruy.a to $(prefix)/lib/"; \
 	fi
