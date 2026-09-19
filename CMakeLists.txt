@@ -172,6 +172,12 @@ if(MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
   add_definitions("/wd4244 /wd4996")
 
+  # 源文件里有中文注释与字符串字面量,而绝大多数文件没有 BOM。MSVC 默认按系统代码页
+  # (中文机器上是 GBK)读无 BOM 的源文件,多字节序列的尾字节会吃掉紧跟的引号,报的是
+  # "常量中有换行符"这类离题语法错——如 gear/streaming_chord_processor.cc 里的 "␣"。
+  # 统一按 UTF-8 读写:源码本就是 UTF-8,librime 内部数据也一律 UTF-8。
+  add_compile_options(/utf-8)
+
   # large address aware
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
