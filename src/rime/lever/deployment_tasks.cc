@@ -8,6 +8,7 @@
 #include <rime/build_config.h>
 
 #include <algorithm>
+#include <set>
 #include <boost/algorithm/string.hpp>
 #include <filesystem>
 #include <boost/uuid/random_generator.hpp>
@@ -377,6 +378,44 @@ bool SchemaUpdate::Run(Deployer* deployer) {
     return false;
   }
   LOG(INFO) << "dictionary '" << dict_name << "' is ready.";
+
+  // 附带词典:engine/translators 里的命名 translator(table_translator@xxx)
+  // 各自 namespace 下声明的 dictionary 同样需要编译。上游只编
+  // translator/dictionary 主词典,rime_ice 的 melt_eng(英文混输)与
+  // radical_lookup(部首反查)因此长期缺 table.bin,运行时每个会话都在
+  // 报加载失败,反查与混输受损。编译失败不阻断部署(主词典已就绪)
+  if (auto translators = schema.config()->GetList("engine/translators")) {
+    std::set<string> compiled{dict_name};
+    for (const auto& item : *translators) {
+      if (item->type() != ConfigItem::kScalar)
+        continue;
+      const auto* scalar = static_cast<const ConfigValue*>(item.get());
+      const string entry = scalar->str();  // 形如 table_translator@melt_eng
+      const auto at = entry.find('@');
+      if (at == string::npos)
+        continue;
+      const string node = entry.substr(at + 1);
+      if (node.empty() || node.front() == '*')
+        continue;  // lua_translator@*date 一类无词典
+      string aux_dict_name;
+      if (!schema.config()->GetString(node + "/dictionary", &aux_dict_name) ||
+          aux_dict_name.empty() || !compiled.insert(aux_dict_name).second)
+        continue;
+      the<Dictionary> aux_dict(
+          Dictionary::Require("dictionary")->Create({&schema, node}));
+      if (!aux_dict) {
+        LOG(WARNING) << "skipping auxiliary dictionary '" << aux_dict_name
+                     << "'.";
+        continue;
+      }
+      LOG(INFO) << "preparing auxiliary dictionary '" << aux_dict_name << "'.";
+      DictCompiler aux_compiler(aux_dict.get());
+      if (!aux_compiler.Compile(compiled_schema)) {
+        LOG(ERROR) << "auxiliary dictionary '" << aux_dict_name
+                   << "' failed to compile.";
+      }
+    }
+  }
   return true;
 }
 
