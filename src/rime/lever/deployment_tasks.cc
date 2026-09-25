@@ -410,7 +410,10 @@ bool SchemaUpdate::Run(Deployer* deployer) {
       }
       LOG(INFO) << "preparing auxiliary dictionary '" << aux_dict_name << "'.";
       DictCompiler aux_compiler(aux_dict.get());
-      if (!aux_compiler.Compile(compiled_schema)) {
+      // 附带词典不挂 schema:prism 的 schema 校验和参照传空,只按词典
+      // 自身校验和判断 —— 否则主 schema 每次部署重建都让它误判重编,
+      // 几万词条的 prism 编译把每次全量部署拖慢好几秒
+      if (!aux_compiler.Compile(path())) {
         LOG(ERROR) << "auxiliary dictionary '" << aux_dict_name
                    << "' failed to compile.";
       }
